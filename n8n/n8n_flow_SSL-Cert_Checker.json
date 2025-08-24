@@ -1,0 +1,169 @@
+{
+  "name": "SSL-Cert Checker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "05e37b61-1183-4b25-a689-aa7bbacbefb6",
+      "name": "Jeden Tag um 07:00"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"URL\": \"shop.heinemann-verlag.de\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "6f5dd7fe-c1e4-4a81-bb9c-7a4c0a486b06",
+      "name": "Definieren zu überwachende Website"
+    },
+    {
+      "parameters": {
+        "url": "=https://ssl-checker.io/api/v1/check/{{ $json.URL }}\n\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        0
+      ],
+      "id": "bfebe023-eda9-418f-aaef-77d43a8789cc",
+      "name": "Check über ssl-checker.io"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de3e2147-017f-4de9-8cf2-85a97321f308",
+              "leftValue": "={{ $json.result.days_left }}",
+              "rightValue": 21,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "8b947bd0-bdd6-49d7-987b-a0e8526519c1",
+      "name": "Ablaufdatum in weniger als 21 Tagen?"
+    },
+    {
+      "parameters": {
+        "subject": "Zertifikat läuft aus!",
+        "html": "=<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Zertifikatswarnung</title>\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #f6f8fa;\n      margin: 0;\n      padding: 0;\n    }\n    .container {\n      max-width: 600px;\n      margin: 30px auto;\n      background: #ffffff;\n      border-radius: 8px;\n      overflow: hidden;\n      box-shadow: 0 2px 8px rgba(0,0,0,0.1);\n    }\n    .header {\n      background-color: #003366;\n      color: #ffffff;\n      padding: 20px;\n      text-align: center;\n      font-size: 20px;\n      font-weight: bold;\n    }\n    .content {\n      padding: 25px;\n      color: #333333;\n      line-height: 1.6;\n      font-size: 15px;\n    }\n    .highlight {\n      background: #fff3cd;\n      border: 1px solid #ffeeba;\n      padding: 10px 15px;\n      margin: 20px 0;\n      border-radius: 5px;\n      color: #856404;\n    }\n    .button {\n      display: inline-block;\n      padding: 12px 20px;\n      margin-top: 20px;\n      background-color: #007BFF;\n      color: #ffffff !important;\n      text-decoration: none;\n      border-radius: 5px;\n      font-weight: bold;\n    }\n    .footer {\n      text-align: center;\n      font-size: 12px;\n      color: #888888;\n      padding: 15px;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      Zertifikat läuft bald ab\n    </div>\n    <div class=\"content\">\n      <p>Sehr geehrte Damen und Herren,</p>\n      <p>\n        das SSL/TLS-Zertifikat für die Website \n        <strong>{{ $json.result.host }}</strong> läuft in Kürze ab.\n      </p>\n\n      <div class=\"highlight\">\n        Ablaufdatum: <strong>{{ $json.result.valid_till }}</strong><br>\n        Verbleibende Tage: <strong>{{ $json.result.days_left }}</strong>\n      </div>\n\n      <p>\n        Bitte erneuern Sie das Zertifikat rechtzeitig, um Ausfälle und Warnmeldungen für Ihre Nutzer zu vermeiden.\n      </p>\n\n      <p>\n        Sie können die Verlängerung direkt über Ihr Administrationsportal durchführen:\n      </p>\n\n      <p style=\"text-align: center;\">\n        <a href=\"https://admin.beispielseite.de/zertifikat\" class=\"button\">\n          Zertifikat verlängern\n        </a>\n      </p>\n\n      <p>Vielen Dank,<br>\n      Ihr IT-Team</p>\n    </div>\n    <div class=\"footer\">\n      Dies ist eine automatisch generierte Nachricht. Bitte antworten Sie nicht direkt auf diese E-Mail.\n    </div>\n  </div>\n</body>\n</html>\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        -128
+      ],
+      "id": "ac2331f9-5f9f-4e8c-bc06-cb95acbd5dea",
+      "name": "Hinweis per Mail senden",
+      "webhookId": "07c1eaa3-aae7-4e50-9f2a-62316d9d1b79",
+      "credentials": {
+        "smtp": {
+          "id": "IqgFkroHKlCrFvBN",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Jeden Tag um 07:00": {
+      "main": [
+        [
+          {
+            "node": "Definieren zu überwachende Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definieren zu überwachende Website": {
+      "main": [
+        [
+          {
+            "node": "Check über ssl-checker.io",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check über ssl-checker.io": {
+      "main": [
+        [
+          {
+            "node": "Ablaufdatum in weniger als 21 Tagen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ablaufdatum in weniger als 21 Tagen?": {
+      "main": [
+        [
+          {
+            "node": "Hinweis per Mail senden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d48fd551-a31f-4165-bd1d-54fa77625950",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b6b2d50e18bbad74775d3c25a95a9882e1b5b692839acc0526a7e90202c398b4"
+  },
+  "id": "Xp8bDkPHHA2pqvAa",
+  "tags": []
+}
