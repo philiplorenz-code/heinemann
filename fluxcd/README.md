@@ -15,6 +15,12 @@ minikube addons enable storage-provisioner
 minikube tunnel
 ```
 
+# /etc/hosts anpassen:
+```bash
+echo "127.0.0.1 whoami.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 podinfo.local" | sudo tee -a /etc/hosts
+```
+
 # GitHub Token
 ```bash
 export GITHUB_USER="<IhrGitHubUser>"
