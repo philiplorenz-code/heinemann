@@ -1,0 +1,9 @@
+plugin: netbox.netbox.nb_inventory
+api_endpoint: https://netbox.philiplorenz.com
+token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+validate_certs: false
+group_by:
+  - sites
+  - device_roles
+compose:
+  ansible_host: primary_ip4.address
