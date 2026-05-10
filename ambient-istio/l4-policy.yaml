@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-client
+  namespace: demo
+spec:
+  targetRef:
+    group: ""
+    kind: Service
+    name: api-service
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/demo/sa/client"]
