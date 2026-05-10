@@ -31,7 +31,8 @@ spec:
       serviceAccountName: api-service
       containers:
       - name: api
-        image: kong/httpbin
+        image: hashicorp/http-echo
+        args: ["-text=v1", "-listen=:80"]
         ports: [{containerPort: 80}]
 ---
 apiVersion: apps/v1
@@ -50,7 +51,8 @@ spec:
       serviceAccountName: api-service
       containers:
       - name: api
-        image: kong/httpbin
+        image: hashicorp/http-echo
+        args: ["-text=v2", "-listen=:80"]
         ports: [{containerPort: 80}]
 ---
 apiVersion: apps/v1
