@@ -1,0 +1,10 @@
+---
+# Globale Variablen — für alle Hosts
+timezone: Europe/Berlin
+ntp_servers:
+  - 0.de.pool.ntp.org
+  - 1.de.pool.ntp.org
+
+# Diese Variable kann in Semaphore über "Extra Variables" pro Task Template überschrieben werden
+app_version: "1.0.0"
+deploy_user: deploy

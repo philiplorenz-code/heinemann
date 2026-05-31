@@ -1,0 +1,11 @@
+{
+  "env": {
+    "ANSIBLE_STDOUT_CALLBACK": "yaml",
+    "ANSIBLE_HOST_KEY_CHECKING": "False"
+  },
+  "extra_vars": {
+    "deploy_env": "production",
+    "app_version": "2.4.1",
+    "notify_slack": true
+  }
+}

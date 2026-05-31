@@ -1,0 +1,12 @@
+# Generiert von Terraform – Umgebung: ${environment}
+# Dieses Inventory kann direkt als Ansible-Inventory verwendet werden.
+
+[${environment}_servers]
+%{ for i, name in server_names ~}
+${name}.${environment}.example.com ansible_port=${server_ports[i]} ansible_user=deploy
+%{ endfor ~}
+
+[${environment}_servers:vars]
+env=${environment}
+managed_by=terraform
+owner=${owner}
