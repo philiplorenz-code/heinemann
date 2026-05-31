@@ -1,0 +1,29 @@
+---
+# Demo-Playbook: läuft lokal ohne SSH, zeigt Semaphore-Kontext via extra_vars
+- name: Semaphore Demo – Hello World
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Gib Begrüßung aus
+      ansible.builtin.debug:
+        msg: "{{ demo_message | default('Hello from Semaphore UI!') }}"
+
+    - name: Zeige Umgebung und Version
+      ansible.builtin.debug:
+        msg: "Umgebung: {{ deploy_env | default('demo') }} | Version: {{ app_version | default('1.0.0') }}"
+
+    - name: Zeige Host-Infos
+      ansible.builtin.debug:
+        msg: "Host: {{ inventory_hostname }} | OS: {{ ansible_system }} {{ ansible_distribution | default('unknown') }}"
+
+    - name: Schreibe Demo-Datei
+      ansible.builtin.copy:
+        dest: /tmp/semaphore-ansible-demo.txt
+        content: |
+          Ausgeführt von Semaphore UI
+          Umgebung : {{ deploy_env | default('demo') }}
+          Version  : {{ app_version | default('1.0.0') }}
+          Host     : {{ inventory_hostname }}
+          Zeitpunkt: {{ ansible_date_time.iso8601 }}
+        mode: "0644"

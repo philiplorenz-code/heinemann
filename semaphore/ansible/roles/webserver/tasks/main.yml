@@ -1,0 +1,25 @@
+---
+- name: Nginx installieren
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+- name: Nginx-Konfiguration deployen
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/app
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Site aktivieren
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/app
+    dest: /etc/nginx/sites-enabled/app
+    state: link
+  notify: Reload nginx
+
+- name: Nginx starten und aktivieren
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

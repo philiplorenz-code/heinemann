@@ -1,0 +1,80 @@
+# docker-compose.ha.yml – Active-Active High Availability (Enterprise)
+# Verwendung: docker compose -f docker-compose.ha.yml up -d
+# Voraussetzung: Semaphore Enterprise License
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: semaphore
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: semaphore
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semaphore"]
+      interval: 10s
+      retries: 5
+    networks:
+      - semaphore-net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - semaphore-net
+
+  semaphore-node-1: &semaphore-base
+    image: semaphoreui/semaphore:latest
+    restart: unless-stopped
+    environment: &semaphore-env
+      SEMAPHORE_DB_DIALECT: postgres
+      SEMAPHORE_DB_HOST: postgres
+      SEMAPHORE_DB_PORT: "5432"
+      SEMAPHORE_DB_USER: semaphore
+      SEMAPHORE_DB_PASS: ${DB_PASSWORD}
+      SEMAPHORE_DB_NAME: semaphore
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD required}
+      SEMAPHORE_ADMIN_NAME: Admin
+      SEMAPHORE_ADMIN_EMAIL: admin@example.com
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${ENCRYPTION_KEY:?ENCRYPTION_KEY required}
+      # Redis-Koordination: Distributed Locks + Shared Task Queue + Pub/Sub
+      SEMAPHORE_REDIS_HOST: redis
+      SEMAPHORE_REDIS_PORT: "6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - semaphore-net
+
+  semaphore-node-2:
+    <<: *semaphore-base   # identische Konfiguration, zweite Instanz
+    environment:
+      <<: *semaphore-env
+
+  # nginx als Load Balancer vor beiden Nodes
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx-ha.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - semaphore-node-1
+      - semaphore-node-2
+    networks:
+      - semaphore-net
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  semaphore-net:
+    driver: bridge

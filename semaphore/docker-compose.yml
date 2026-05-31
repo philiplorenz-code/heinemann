@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: semaphore
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-semaphore_secret}
+      POSTGRES_DB: semaphore
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semaphore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - semaphore-net
+
+  semaphore:
+    build: .
+    image: semaphore-demo:local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      SEMAPHORE_DB_DIALECT: postgres
+      SEMAPHORE_DB_HOST: postgres
+      SEMAPHORE_DB_PORT: "5432"
+      SEMAPHORE_DB_USER: semaphore
+      SEMAPHORE_DB_PASS: ${DB_PASSWORD:-semaphore_secret}
+      # Artikelhinweis: SEMAPHORE_DB_NAME ist der korrekte Env-Name (nicht SEMAPHORE_DB)
+      SEMAPHORE_DB_NAME: semaphore
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin1234!}
+      SEMAPHORE_ADMIN_NAME: Admin
+      SEMAPHORE_ADMIN_EMAIL: admin@example.com
+      # PFLICHT: 32 Byte base64 – verloren = alle Secrets unbrauchbar
+      # Generieren: head -c32 /dev/urandom | base64
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${ENCRYPTION_KEY:-gs72mPntFATGJs9qK0pQ0rKtfidlexiMjYCH9gWKhTU=}
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+      ANSIBLE_FORCE_COLOR: "true"
+    volumes:
+      - semaphore-data:/home/semaphore
+      - ./ansible:/opt/ansible:ro
+      - ./terraform:/opt/terraform:ro
+      - ./powershell:/opt/powershell:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - semaphore-net
+
+volumes:
+  postgres-data:
+  semaphore-data:
+
+networks:
+  semaphore-net:
+    driver: bridge

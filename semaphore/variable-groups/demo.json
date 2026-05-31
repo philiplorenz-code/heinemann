@@ -1,0 +1,12 @@
+{
+  "env": {
+    "ANSIBLE_STDOUT_CALLBACK": "yaml",
+    "ANSIBLE_HOST_KEY_CHECKING": "False",
+    "ANSIBLE_FORCE_COLOR": "true"
+  },
+  "extra_vars": {
+    "demo_message": "Hello from Semaphore UI!",
+    "app_version": "1.0.0",
+    "deploy_env": "demo"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "env": {
+    "AWS_ACCESS_KEY_ID": "REPLACE_WITH_KEY_STORE_SECRET",
+    "AWS_SECRET_ACCESS_KEY": "REPLACE_WITH_KEY_STORE_SECRET",
+    "AWS_DEFAULT_REGION": "eu-central-1",
+    "TF_LOG": "ERROR"
+  },
+  "extra_vars": {
+    "environment": "production",
+    "vpc_cidr": "10.0.0.0/16"
+  }
+}
