@@ -1,0 +1,35 @@
+# API-Schlüssel aus dem zuvor erstellten Kubernetes Secret laden
+additionalEnvVars:
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: holmes-secrets
+        key: OPENAI_API_KEY
+
+# Verfügbares Modell und Standardmodell festlegen
+modelList:
+  gpt-5.6-terra:
+    api_key: "{{ env.OPENAI_API_KEY }}"
+    model: openai/gpt-5.6-terra
+    temperature: 1
+    reasoning_effort: medium
+
+config:
+  model: gpt-5.6-terra
+
+# Für den ersten Test nur Kubernetes-Ressourcen und Logs aktivieren
+toolsets:
+  kubernetes/core:
+    enabled: true
+
+  kubernetes/logs:
+    enabled: true
+
+  internet:
+    enabled: false
+
+  prometheus/metrics:
+    enabled: false
+
+# Telemetrie deaktivieren
+enableTelemetry: false
