@@ -1,0 +1,41 @@
+# Erweiterung von values-basic.yaml um Prometheus, Loki und den Azure-MCP-Server.
+# Setzt ein AKS-Cluster mit aktivierter Workload Identity voraus.
+
+toolsets:
+  kubernetes/core:
+    enabled: true
+
+  kubernetes/logs:
+    enabled: true
+
+  # Metriken aus dem Prometheus-Service im Cluster
+  prometheus/metrics:
+    enabled: true
+    subtype: prometheus
+    config:
+      prometheus_url: http://prometheus-server.monitoring.svc.cluster.local:9090
+
+  # Historische Logs direkt aus Loki
+  grafana/loki:
+    enabled: true
+    config:
+      api_url: http://loki.monitoring.svc.cluster.local:3100
+
+# Zugriff auf Azure-Ressourcen über einen separaten MCP-Server
+mcpAddons:
+  azure:
+    enabled: true
+
+    serviceAccount:
+      create: true
+      name: azure-api-mcp-sa
+      annotations:
+        azure.workload.identity/client-id: "<CLIENT-ID>"
+        azure.workload.identity/tenant-id: "<TENANT-ID>"
+
+    config:
+      tenantId: "<TENANT-ID>"
+      subscriptionId: "<SUBSCRIPTION-ID>"
+      clientId: "<CLIENT-ID>"
+      authMethod: workload-identity
+      readOnlyMode: true

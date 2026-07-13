@@ -1,0 +1,49 @@
+# Eigener Namespace für den fehlerhaften Test-Workload
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+---
+# ConfigMap mit bewusst abweichendem Variablennamen
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-config
+  namespace: shop
+data:
+  DATABASE_HOST: postgres.shop.svc.cluster.local
+---
+# Checkout-Service erwartet DB_HOST und startet daher nicht erfolgreich
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-service
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout-service
+  template:
+    metadata:
+      labels:
+        app: checkout-service
+    spec:
+      containers:
+        - name: checkout
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting checkout-service"
+
+              if [ -z "$DB_HOST" ]; then
+                echo "ERROR: DB_HOST is not set"
+                exit 1
+              fi
+
+              echo "Connecting to $DB_HOST"
+              sleep 3600
+          envFrom:
+            - configMapRef:
+                name: checkout-config
