@@ -1,0 +1,59 @@
+// QUERY 01-inventory: execute this block alone. Full IDs/tags, including genuinely untagged objects.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/virtualnetworks','microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| project id, name, type, resourceGroup, location, tags
+| order by resourceGroup asc, name asc
+
+// QUERY 02-required-values: missing, exactly empty, and whitespace-only required values. Canonical keys are verified in this lab.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/virtualnetworks','microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| extend Application=tostring(tags.Application), OwnerTeam=tostring(tags.OwnerTeam), CostCenter=tostring(tags.CostCenter), Environment=tostring(tags.Environment)
+| where isempty(trim(@'\s+',Application)) or isempty(trim(@'\s+',OwnerTeam)) or isempty(trim(@'\s+',CostCenter)) or isempty(trim(@'\s+',Environment))
+| project id,name,resourceGroup,Application,OwnerTeam,CostCenter,Environment,tags
+| order by resourceGroup asc,name asc
+
+// QUERY 03-invalid-values: missing Environment is handled in 02, historical CostCentre is a different spelling, not a case alias.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/virtualnetworks','microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| extend Environment=tostring(tags.Environment),CostCenter=tostring(tags.CostCenter),CostCentre=tostring(tags.CostCentre)
+| extend invalidEnvironment=isnotempty(Environment) and Environment !in ('dev','test','prod'),historicalCostCentre=bag_has_key(tags,'CostCentre'),wrongCostCenter=isnotempty(CostCenter) and CostCenter != 'CC4711'
+| where invalidEnvironment or historicalCostCentre or wrongCostCenter
+| project id,name,resourceGroup,Environment,CostCenter,CostCentre,invalidEnvironment,historicalCostCentre,wrongCostCenter,tags
+
+// QUERY 04-completeness: denominator = only these 12 top-level network resources, not RGs/subnets/policy objects.
+// complete4 = four non-whitespace values (not necessarily valid). modelMatch = exact raw values incl expected Environment per RG.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/virtualnetworks','microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| extend Application=tostring(tags.Application),OwnerTeam=tostring(tags.OwnerTeam),CostCenter=tostring(tags.CostCenter),Environment=tostring(tags.Environment)
+| extend expectedEnvironment=case(resourceGroup endswith '-development','dev',resourceGroup endswith '-production','prod','test')
+| extend complete4=isnotempty(trim(@'\s+',Application)) and isnotempty(trim(@'\s+',OwnerTeam)) and isnotempty(trim(@'\s+',CostCenter)) and isnotempty(trim(@'\s+',Environment))
+| extend modelMatch=Application == 'order-api' and OwnerTeam == 'platform-orders' and CostCenter == 'CC4711' and Environment == expectedEnvironment
+| summarize total=count(),complete=countif(complete4),incomplete=countif(not(complete4)),modelMatches=countif(modelMatch),modelMismatches=countif(not(modelMatch)) by resourceGroup
+| order by resourceGroup asc
+
+// QUERY 05-unassociated: association review candidates, NOT proven waste or safe deletion. Workbook uses stricter null-only tests.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| extend nicRefs=properties.networkInterfaces,subnetRefs=properties.subnets
+| where coalesce(array_length(subnetRefs),0) == 0 and (type =~ 'microsoft.network/routetables' or coalesce(array_length(nicRefs),0) == 0)
+| extend workbookCandidate=iff(type =~ 'microsoft.network/networksecuritygroups',isnull(nicRefs) and isnull(subnetRefs),isnull(subnetRefs))
+| project id,name,type,resourceGroup,nicRefs,subnetRefs,workbookCandidate,tags
+| order by resourceGroup asc,name asc
+
+// QUERY 06-screenshot-table: compact read-only portal capture. Owner shown in brackets exposes intentional spaces.
+Resources
+| where subscriptionId == '<SUBSCRIPTION_ID>'
+| where resourceGroup in~ ('rg-tagging-demo-<LAB_ID>-development','rg-tagging-demo-<LAB_ID>-production','rg-tagging-demo-<LAB_ID>-legacy')
+| where type in~ ('microsoft.network/virtualnetworks','microsoft.network/networksecuritygroups','microsoft.network/routetables')
+| project name,resourceGroup,Application=tostring(tags.Application),Owner=strcat('[',tostring(tags.OwnerTeam),']'),CostCenter=tostring(tags.CostCenter),Environment=tostring(tags.Environment)
+| order by resourceGroup asc,name asc

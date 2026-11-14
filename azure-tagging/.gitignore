@@ -1,0 +1,8 @@
+.lab/
+__pycache__/
+*.pyc
+*.tfstate*
+.terraform/
+*.tfvars
+!*.tfvars.example
+*.tfplan
